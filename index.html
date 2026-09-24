@@ -68,6 +68,7 @@
   }
   input[type="text"],
   input[type="email"],
+  input[type="tel"],
   input[type="file"],
   textarea {
     width: 100%;
@@ -229,6 +230,10 @@
       <label for="correo">Correo electrónico</label>
       <input type="email" id="correo" name="correo" required>
 
+      <label for="telefono">Teléfono / WhatsApp</label>
+      <input type="tel" id="telefono" name="telefono" required placeholder="Ej: +58 412 1234567">
+      <p class="ayuda">Incluye el código del país. Ejemplo: +58 412 1234567</p>
+
       <label for="comentario">Comentario o duda (opcional)</label>
       <textarea id="comentario" name="comentario" placeholder="Escribe aquí cualquier comentario o duda que tengas."></textarea>
 
@@ -274,6 +279,7 @@
       var nombre = document.getElementById('nombre').value.trim();
       var cedula = document.getElementById('cedula').value.trim();
       var correo = document.getElementById('correo').value.trim();
+      var telefono = document.getElementById('telefono').value.trim();
       var comentario = document.getElementById('comentario').value.trim();
       var archivo = document.getElementById('archivo').files[0];
 
@@ -333,6 +339,7 @@
             nombre: nombre,
             cedula: cedula,
             correo: correo,
+            telefono: telefono,
             comentario: comentario,
             archivo_pdf: rutaArchivo
           })
@@ -345,7 +352,7 @@
       }
 
       form.reset();
-      mostrar('ok', '¡Gracias! Tu postulación fue recibida correctamente. La Comision de Auditoria lo revisará y se comunicará contigo al correo que indicaste.');
+      mostrar('ok', '¡Gracias! Tu postulación fue recibida correctamente. La Comisión de Auditoría la revisará y se comunicará contigo al correo que indicaste.');
     } catch (err) {
       console.error(err);
       mostrar('error', 'Hubo un problema al enviar: ' + err.message);
