@@ -67,7 +67,12 @@
     border-color: #2d5016;
     background: #fff;
   }
-  input:invalid:not(:placeholder-shown) {
+  /* Solo los campos de texto/email/tel se ponen rojos si están mal.
+     El input de archivo NO se pinta de rojo. */
+  input[type="text"]:invalid:not(:placeholder-shown),
+  input[type="email"]:invalid:not(:placeholder-shown),
+  input[type="tel"]:invalid:not(:placeholder-shown),
+  textarea:invalid:not(:placeholder-shown) {
     border-color: #c0392b;
     background: #fdf2f0;
   }
@@ -132,10 +137,6 @@
     border-radius: 8px;
     font-size: 17px;
     display: none;
-  }
-  .mensaje.ok {
-    background: #e2f0d9; color: #1e3a0d;
-    border-left: 6px solid #2d5016; display: block;
   }
   .mensaje.error {
     background: #fbe3e3; color: #7a1a1a;
@@ -223,13 +224,15 @@
       <input type="text" id="nombre" name="nombre" required
              pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]{3,80}"
              placeholder="Ej: María Fernanda Pérez"
-             title="Solo letras y espacios, mínimo 3 caracteres. Sin números ni símbolos.">
+             title="Solo letras y espacios, mínimo 3 caracteres.">
 
       <label for="cedula">Cédula de identidad</label>
       <input type="text" id="cedula" name="cedula" required
-             pattern="[VvEe]-?[0-9]{6,9}"
-             placeholder="Ej: V-12345678"
-             title="Formato válido: V-12345678 o E-12345678. Solo números después de la letra.">
+             inputmode="numeric"
+             pattern="[0-9]{6,9}"
+             maxlength="9"
+             placeholder="Ej: 12345678"
+             title="Solo números, entre 6 y 9 dígitos.">
 
       <label for="correo">Correo electrónico</label>
       <input type="email" id="correo" name="correo" required
@@ -244,14 +247,14 @@
                pattern="[0-9]{10}"
                maxlength="10"
                placeholder="4121234567"
-               title="Escribe los 10 dígitos de tu número, sin espacios ni guiones. Ejemplo: 4121234567"
+               title="Escribe los 10 dígitos, sin el +58."
                autocomplete="tel-national">
       </div>
       <p class="ayuda">Escribe solo los 10 dígitos, sin el +58. Si estás fuera de Venezuela, indícalo en el comentario.</p>
 
       <label for="comentario">Comentario o duda (opcional)</label>
       <textarea id="comentario" name="comentario" maxlength="600"
-                placeholder="Escribe aquí cualquier comentario o duda que tengas (máximo 600 caracteres)."></textarea>
+                placeholder="Escribe aquí cualquier comentario o duda (máximo 600 caracteres)."></textarea>
 
       <label for="archivo">Curriculum en PDF</label>
       <input type="file" id="archivo" name="archivo" accept="application/pdf" required>
@@ -279,13 +282,17 @@
   var boton = document.getElementById('boton');
   var mensaje = document.getElementById('mensaje');
 
-  function mostrar(tipo, texto) {
-    mensaje.className = 'mensaje ' + tipo;
+  function mostrarError(texto) {
+    mensaje.className = 'mensaje error';
     mensaje.textContent = texto;
     mensaje.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  // Validaciones personalizadas: mensajes claros en español
+  function limpiarMensaje() {
+    mensaje.className = 'mensaje';
+    mensaje.textContent = '';
+  }
+
   var nombreEl = document.getElementById('nombre');
   var cedulaEl = document.getElementById('cedula');
   var correoEl = document.getElementById('correo');
@@ -299,9 +306,11 @@
     }
   });
 
+  // Cédula: solo números. Sin letras V ni E.
   cedulaEl.addEventListener('input', function() {
+    cedulaEl.value = cedulaEl.value.replace(/[^0-9]/g, '');
     if (cedulaEl.validity.patternMismatch) {
-      cedulaEl.setCustomValidity('Formato válido: V-12345678 o E-12345678.');
+      cedulaEl.setCustomValidity('Escribe solo números, entre 6 y 9 dígitos.');
     } else {
       cedulaEl.setCustomValidity('');
     }
@@ -315,7 +324,6 @@
     }
   });
 
-  // Solo dígitos en el teléfono (por si el navegador no aplica el pattern)
   telefonoEl.addEventListener('input', function() {
     telefonoEl.value = telefonoEl.value.replace(/[^0-9]/g, '');
     if (telefonoEl.validity.patternMismatch) {
@@ -327,9 +335,8 @@
 
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
-    mensaje.className = 'mensaje';
+    limpiarMensaje();
 
-    // Validación nativa del navegador (muestra el mensajito al lado del campo)
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
@@ -340,22 +347,22 @@
 
     try {
       var nombre = nombreEl.value.trim();
-      var cedula = cedulaEl.value.trim().toUpperCase();
+      var cedula = cedulaEl.value.trim();
       var correo = correoEl.value.trim();
       var telefono = '+58 ' + telefonoEl.value.trim();
       var comentario = document.getElementById('comentario').value.trim();
       var archivo = document.getElementById('archivo').files[0];
 
       if (!archivo) {
-        mostrar('error', 'Por favor adjunta tu curriculum en PDF.');
+        mostrarError('Por favor adjunta tu curriculum en PDF.');
         return;
       }
       if (archivo.type !== 'application/pdf') {
-        mostrar('error', 'El archivo debe ser un PDF.');
+        mostrarError('El archivo debe ser un PDF.');
         return;
       }
       if (archivo.size > MAX_BYTES) {
-        mostrar('error', 'El PDF pesa más de 5 MB. Por favor comprímelo o envíalo más liviano.');
+        mostrarError('El PDF pesa más de 5 MB. Por favor comprímelo o envíalo más liviano.');
         return;
       }
 
@@ -409,10 +416,11 @@
       }
 
       form.reset();
-      mostrar('ok', '¡Gracias! Tu postulación fue recibida correctamente. La Comisión de Auditoría la revisará y se comunicará contigo al correo que indicaste.');
+      alert('Hemos recibido tu información. Pronto te contactaremos.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error(err);
-      mostrar('error', 'Hubo un problema al enviar: ' + err.message);
+      mostrarError('Hubo un problema al enviar: ' + err.message);
     } finally {
       boton.disabled = false;
       boton.textContent = 'Enviar postulación';
