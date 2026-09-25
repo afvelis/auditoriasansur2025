@@ -67,8 +67,6 @@
     border-color: #2d5016;
     background: #fff;
   }
-  /* Solo los campos de texto/email/tel se ponen rojos si están mal.
-     El input de archivo NO se pinta de rojo. */
   input[type="text"]:invalid:not(:placeholder-shown),
   input[type="email"]:invalid:not(:placeholder-shown),
   input[type="tel"]:invalid:not(:placeholder-shown),
@@ -146,6 +144,62 @@
     text-align: center; font-size: 15px;
     color: #5a5a5a; padding: 20px;
   }
+
+  /* ---- Ventanita bonita (modal) ---- */
+  .modal-fondo {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 30, 10, 0.55);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-fondo.activo { display: flex; }
+  .modal-caja {
+    background: #fff;
+    border-radius: 14px;
+    max-width: 460px;
+    width: 100%;
+    padding: 30px 26px 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    text-align: center;
+    border-top: 8px solid #2d5016;
+    animation: aparecer 0.25s ease-out;
+  }
+  @keyframes aparecer {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .modal-check {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #2d5016;
+    color: #fff;
+    font-size: 40px;
+    line-height: 68px;
+    margin: 0 auto 16px;
+    font-weight: bold;
+  }
+  .modal-caja h3 {
+    color: #2d5016;
+    font-size: 22px;
+    margin: 0 0 10px;
+    border: none;
+    padding: 0;
+  }
+  .modal-caja p {
+    color: #333;
+    font-size: 17px;
+    margin: 0 0 20px;
+  }
+  .modal-caja button {
+    margin-top: 0;
+    background: #2d5016;
+  }
+
   @media (max-width: 500px) {
     header h1 { font-size: 22px; }
     h2 { font-size: 20px; }
@@ -272,6 +326,16 @@
   ASOSANSUR · Urbanización Sansur, San Diego, Carabobo
 </footer>
 
+<!-- Ventanita bonita -->
+<div id="modalExito" class="modal-fondo">
+  <div class="modal-caja">
+    <div class="modal-check">✔</div>
+    <h3>¡Postulación enviada!</h3>
+    <p>Hemos recibido tu información.<br>Pronto te contactaremos.</p>
+    <button id="cerrarModal">Aceptar</button>
+  </div>
+</div>
+
 <script>
 (function() {
   var SUPABASE_URL = 'https://nvaajpviirxgkfzvzcuw.supabase.co';
@@ -281,6 +345,8 @@
   var form = document.getElementById('formulario');
   var boton = document.getElementById('boton');
   var mensaje = document.getElementById('mensaje');
+  var modal = document.getElementById('modalExito');
+  var btnCerrar = document.getElementById('cerrarModal');
 
   function mostrarError(texto) {
     mensaje.className = 'mensaje error';
@@ -292,6 +358,22 @@
     mensaje.className = 'mensaje';
     mensaje.textContent = '';
   }
+
+  function abrirModal() {
+    modal.classList.add('activo');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function cerrarModal() {
+    modal.classList.remove('activo');
+    document.body.style.overflow = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  btnCerrar.addEventListener('click', cerrarModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) cerrarModal();
+  });
 
   var nombreEl = document.getElementById('nombre');
   var cedulaEl = document.getElementById('cedula');
@@ -306,7 +388,6 @@
     }
   });
 
-  // Cédula: solo números. Sin letras V ni E.
   cedulaEl.addEventListener('input', function() {
     cedulaEl.value = cedulaEl.value.replace(/[^0-9]/g, '');
     if (cedulaEl.validity.patternMismatch) {
@@ -416,8 +497,7 @@
       }
 
       form.reset();
-      alert('Hemos recibido tu información. Pronto te contactaremos.');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      abrirModal();
     } catch (err) {
       console.error(err);
       mostrarError('Hubo un problema al enviar: ' + err.message);
