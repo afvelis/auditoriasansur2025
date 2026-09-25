@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Privado – Postulaciones</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.55;
+    color: #1a1a1a;
+    background: #f4f7f0;
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    background: #2d5016;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+  }
+  header h1 { font-size: 22px; margin: 0; }
+  header p { font-size: 15px; margin: 6px 0 0; color: #e6f0dc; }
+  main { max-width: 900px; margin: 0 auto; padding: 22px 16px 60px; }
+  .caja {
+    background: #fff;
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  h2 {
+    color: #2d5016;
+    font-size: 20px;
+    margin-top: 0;
+    border-bottom: 2px solid #d8e6c8;
+    padding-bottom: 8px;
+  }
+  label { display: block; font-weight: bold; margin-top: 14px; margin-bottom: 6px; }
+  input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 17px;
+    font-family: inherit;
+    border: 2px solid #b8c9a8;
+    border-radius: 8px;
+    background: #fdfdfb;
+  }
+  input:focus { outline: none; border-color: #2d5016; background: #fff; }
+  button {
+    background: #2d5016;
+    color: #fff;
+    border: none;
+    padding: 13px 20px;
+    font-size: 17px;
+    font-family: inherit;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  button:hover:not(:disabled) { background: #1e3a0d; }
+  button:disabled { background: #8fa87a; cursor: not-allowed; }
+  .btn-chico {
+    padding: 8px 14px;
+    font-size: 15px;
+    margin-top: 10px;
+  }
+  .mensaje {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    display: none;
+  }
+  .mensaje.ok {
+    background: #e2f0d9; color: #1e3a0d;
+    border-left: 6px solid #2d5016; display: block;
+  }
+  .mensaje.error {
+    background: #fbe3e3; color: #7a1a1a;
+    border-left: 6px solid #a02020; display: block;
+  }
+  .postulacion {
+    background: #fff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-left: 6px solid #2d5016;
+  }
+  .campo { margin-bottom: 6px; }
+  .campo b { color: #2d5016; }
+  .comentario-caja {
+    background: #fafaf6;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 10px 0;
+    font-style: italic;
+    color: #333;
+    border-left: 4px solid #d8e6c8;
+  }
+  textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    border: 2px solid #b8c9a8;
+    border-radius: 8px;
+    background: #fdfdfb;
+    resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: #2d5016; background: #fff; }
+  .fecha {
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+  }
+  .acciones { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+  footer {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    padding: 20px;
+  }
+  #panel { display: none; }
+  #login { max-width: 420px; margin: 40px auto; }
+  .aviso {
+    background: #fff3cd;
+    border-left: 6px solid #b8860b;
+    padding: 12px 14px;
+    border-radius: 6px;
+    color: #5a4400;
+    font-size: 15px;
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Panel Privado – Postulaciones</h1>
+  <p>ASOSANSUR · Auditoría Externa 2025</p>
+</header>
+
+<main>
+
+  <!-- LOGIN -->
+  <div id="login" class="caja">
+    <h2>Entrar</h2>
+    <p>Esta zona es privada. Ingresa con tu correo y contraseña de administradora.</p>
+    <label for="email">Correo</label>
+    <input type="email" id="email" autocomplete="username">
+    <label for="password">Contraseña</label>
+    <input type="password" id="password" autocomplete="current-password">
+    <button id="btnLogin">Entrar</button>
+    <div id="msgLogin" class="mensaje"></div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel">
+    <div class="caja" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div><b id="saludoUsuario"></b></div>
+      <button id="btnSalir" class="btn-chico" style="background:#a02020;">Cerrar sesión</button>
+    </div>
+
+    <h2 style="margin-top:20px;">Postulaciones recibidas</h2>
+    <div id="listaPostulaciones"></div>
+  </div>
+
+</main>
+
+<footer>ASOSANSUR · Panel privado</footer>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://nvaajpviirxgkfzvzcuw.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_I-jyMy58Z64alh1q07aFJg_VPE2VqcR';
+
+  var login = document.getElementById('login');
+  var panel = document.getElementById('panel');
+  var emailEl = document.getElementById('email');
+  var passEl = document.getElementById('password');
+  var msgLogin = document.getElementById('msgLogin');
+  var lista = document.getElementById('listaPostulaciones');
+  var saludo = document.getElementById('saludoUsuario');
+
+  var token = null;
+
+  function mostrarLogin(tipo, texto) {
+    msgLogin.className = 'mensaje ' + tipo;
+    msgLogin.textContent = texto;
+  }
+
+  function escapar(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function formatearFecha(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return d.toLocaleString('es-VE', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  async function entrar() {
+    mostrarLogin('ok', 'Entrando...');
+    try {
+      var r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: emailEl.value.trim(),
+          password: passEl.value
+        })
+      });
+      var data = await r.json();
+      if (!r.ok) {
+        throw new Error(data.error_description || data.msg || 'Correo o contraseña incorrectos.');
+      }
+      token = data.access_token;
+      saludo.textContent = 'Conectada como: ' + data.user.email;
+      login.style.display = 'none';
+      panel.style.display = 'block';
+      cargarPostulaciones();
+    } catch (e) {
+      mostrarLogin('error', e.message);
+    }
+  }
+
+  async function cargarPostulaciones() {
+    lista.innerHTML = '<p>Cargando postulaciones...</p>';
+    try {
+      var r = await fetch(
+        SUPABASE_URL + '/rest/v1/postulaciones?select=*&order=fecha_postulacion.desc',
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token
+          }
+        }
+      );
+      if (!r.ok) {
+        var t = await r.text();
+        throw new Error('No se pudieron leer las postulaciones: ' + t);
+      }
+      var data = await r.json();
+      if (!data.length) {
+        lista.innerHTML = '<div class="caja">Aún no hay postulaciones.</div>';
+        return;
+      }
+      lista.innerHTML = data.map(renderPostulacion).join('');
+      // Asignar eventos a los botones generados
+      data.forEach(function(p) {
+        var btnGuardar = document.getElementById('guardar-' + p.id);
+        var btnPdf = document.getElementById('pdf-' + p.id);
+        if (btnGuardar) btnGuardar.addEventListener('click', function() { guardarRespuesta(p.id); });
+        if (btnPdf) btnPdf.addEventListener('click', function() { verPdf(p.archivo_pdf); });
+      });
+    } catch (e) {
+      lista.innerHTML = '<div class="mensaje error" style="display:block;">' + escapar(e.message) + '</div>';
+    }
+  }
+
+  function renderPostulacion(p) {
+    return ''
+      + '<div class="postulacion">'
+      +   '<div class="campo"><b>Nombre:</b> ' + escapar(p.nombre) + '</div>'
+      +   '<div class="campo"><b>Cédula:</b> ' + escapar(p.cedula) + '</div>'
+      +   '<div class="campo"><b>Correo:</b> ' + escapar(p.correo) + '</div>'
+      +   '<div class="campo"><b>Teléfono:</b> ' + escapar(p.telefono || '—') + '</div>'
+      +   (p.comentario ? '<div class="comentario-caja">"' + escapar(p.comentario) + '"</div>' : '')
+      +   '<div class="acciones">'
+      +     '<button class="btn-chico" id="pdf-' + p.id + '">Ver CV (PDF)</button>'
+      +   '</div>'
+      +   '<div class="fecha">Postuló: ' + formatearFecha(p.fecha_postulacion) + '</div>'
+      +   '<div style="margin-top:12px;">'
+      +     '<label style="margin-top:0;">Tu respuesta (se guarda aquí):</label>'
+      +     '<textarea id="resp-' + p.id + '">' + escapar(p.respuesta || '') + '</textarea>'
+      +     '<div class="acciones">'
+      +       '<button class="btn-chico" id="guardar-' + p.id + '">Guardar respuesta</button>'
+      +       (p.fecha_respuesta ? '<span class="fecha" style="align-self:center;">Respondido: ' + formatearFecha(p.fecha_respuesta) + '</span>' : '')
+      +     '</div>'
+      +   '</div>'
+      + '</div>';
+  }
+
+  async function guardarRespuesta(id) {
+    var txt = document.getElementById('resp-' + id).value.trim();
+    try {
+      var r = await fetch(
+        SUPABASE_URL + '/rest/v1/postulaciones?id=eq.' + id,
+        {
+          method: 'PATCH',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            respuesta: txt,
+            fecha_respuesta: new Date().toISOString()
+          })
+        }
+      );
+      if (!r.ok) {
+        var t = await r.text();
+        throw new Error(t);
+      }
+      alert('Respuesta guardada.');
+      cargarPostulaciones();
+    } catch (e) {
+      alert('No se pudo guardar: ' + e.message);
+    }
+  }
+
+  async function verPdf(rutaArchivo) {
+    if (!rutaArchivo) { alert('Esta postulación no tiene PDF.'); return; }
+    try {
+      var r = await fetch(
+        SUPABASE_URL + '/storage/v1/object/sign/cv-postulaciones/' + rutaArchivo,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ expiresIn: 3600 })
+        }
+      );
+      var data = await r.json();
+      if (!r.ok) throw new Error(data.message || 'No se pudo abrir el PDF.');
+      var url = SUPABASE_URL + '/storage/v1' + data.signedURL;
+      window.open(url, '_blank');
+    } catch (e) {
+      alert('Error al abrir el PDF: ' + e.message);
+    }
+  }
+
+  document.getElementById('btnLogin').addEventListener('click', entrar);
+  passEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') entrar();
+  });
+  document.getElementById('btnSalir').addEventListener('click', function() {
+    token = null;
+    emailEl.value = '';
+    passEl.value = '';
+    panel.style.display = 'none';
+    login.style.display = 'block';
+    mostrarLogin('ok', 'Sesión cerrada.');
+  });
+})();
+</script>
+
+</body>
+</html>
