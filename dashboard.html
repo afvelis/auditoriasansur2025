@@ -68,6 +68,8 @@
     font-size: 15px;
     margin-top: 10px;
   }
+  .btn-rojo { background: #a02020; }
+  .btn-rojo:hover:not(:disabled) { background: #7a1717; }
   .mensaje {
     margin-top: 16px;
     padding: 14px;
@@ -114,29 +116,16 @@
     resize: vertical;
   }
   textarea:focus { outline: none; border-color: #2d5016; background: #fff; }
-  .fecha {
-    font-size: 14px;
-    color: #666;
-    margin-top: 8px;
-  }
-  .acciones { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
-  footer {
-    text-align: center;
-    font-size: 14px;
-    color: #666;
-    padding: 20px;
-  }
+  .fecha { font-size: 14px; color: #666; margin-top: 8px; }
+  .acciones { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  footer { text-align: center; font-size: 14px; color: #666; padding: 20px; }
   #panel { display: none; }
   #login { max-width: 420px; margin: 40px auto; }
-  .aviso {
-    background: #fff3cd;
-    border-left: 6px solid #b8860b;
-    padding: 12px 14px;
-    border-radius: 6px;
-    color: #5a4400;
-    font-size: 15px;
-    margin-top: 14px;
+  .barra-superior {
+    display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 10px;
   }
+  .barra-acciones { display: flex; gap: 10px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -162,9 +151,12 @@
 
   <!-- PANEL -->
   <div id="panel">
-    <div class="caja" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <div class="caja barra-superior">
       <div><b id="saludoUsuario"></b></div>
-      <button id="btnSalir" class="btn-chico" style="background:#a02020;">Cerrar sesión</button>
+      <div class="barra-acciones">
+        <button id="btnBorrarTodo" class="btn-chico btn-rojo">Borrar TODAS las postulaciones</button>
+        <button id="btnSalir" class="btn-chico" style="background:#555;">Cerrar sesión</button>
+      </div>
     </div>
 
     <h2 style="margin-top:20px;">Postulaciones recibidas</h2>
@@ -179,6 +171,7 @@
 (function() {
   var SUPABASE_URL = 'https://nvaajpviirxgkfzvzcuw.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_I-jyMy58Z64alh1q07aFJg_VPE2VqcR';
+  var BUCKET = 'cv-postulaciones';
 
   var login = document.getElementById('login');
   var panel = document.getElementById('panel');
@@ -218,19 +211,14 @@
     try {
       var r = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
         method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: emailEl.value.trim(),
           password: passEl.value
         })
       });
       var data = await r.json();
-      if (!r.ok) {
-        throw new Error(data.error_description || data.msg || 'Correo o contraseña incorrectos.');
-      }
+      if (!r.ok) throw new Error(data.error_description || data.msg || 'Correo o contraseña incorrectos.');
       token = data.access_token;
       saludo.textContent = 'Conectada como: ' + data.user.email;
       login.style.display = 'none';
@@ -246,12 +234,7 @@
     try {
       var r = await fetch(
         SUPABASE_URL + '/rest/v1/postulaciones?select=*&order=fecha_postulacion.desc',
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': 'Bearer ' + token
-          }
-        }
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
       );
       if (!r.ok) {
         var t = await r.text();
@@ -263,12 +246,13 @@
         return;
       }
       lista.innerHTML = data.map(renderPostulacion).join('');
-      // Asignar eventos a los botones generados
       data.forEach(function(p) {
         var btnGuardar = document.getElementById('guardar-' + p.id);
         var btnPdf = document.getElementById('pdf-' + p.id);
+        var btnBorrar = document.getElementById('borrar-' + p.id);
         if (btnGuardar) btnGuardar.addEventListener('click', function() { guardarRespuesta(p.id); });
         if (btnPdf) btnPdf.addEventListener('click', function() { verPdf(p.archivo_pdf); });
+        if (btnBorrar) btnBorrar.addEventListener('click', function() { borrarUna(p); });
       });
     } catch (e) {
       lista.innerHTML = '<div class="mensaje error" style="display:block;">' + escapar(e.message) + '</div>';
@@ -285,6 +269,7 @@
       +   (p.comentario ? '<div class="comentario-caja">"' + escapar(p.comentario) + '"</div>' : '')
       +   '<div class="acciones">'
       +     '<button class="btn-chico" id="pdf-' + p.id + '">Ver CV (PDF)</button>'
+      +     '<button class="btn-chico btn-rojo" id="borrar-' + p.id + '">Borrar esta</button>'
       +   '</div>'
       +   '<div class="fecha">Postuló: ' + formatearFecha(p.fecha_postulacion) + '</div>'
       +   '<div style="margin-top:12px;">'
@@ -317,10 +302,7 @@
           })
         }
       );
-      if (!r.ok) {
-        var t = await r.text();
-        throw new Error(t);
-      }
+      if (!r.ok) throw new Error(await r.text());
       alert('Respuesta guardada.');
       cargarPostulaciones();
     } catch (e) {
@@ -332,7 +314,7 @@
     if (!rutaArchivo) { alert('Esta postulación no tiene PDF.'); return; }
     try {
       var r = await fetch(
-        SUPABASE_URL + '/storage/v1/object/sign/cv-postulaciones/' + rutaArchivo,
+        SUPABASE_URL + '/storage/v1/object/sign/' + BUCKET + '/' + rutaArchivo,
         {
           method: 'POST',
           headers: {
@@ -345,17 +327,114 @@
       );
       var data = await r.json();
       if (!r.ok) throw new Error(data.message || 'No se pudo abrir el PDF.');
-      var url = SUPABASE_URL + '/storage/v1' + data.signedURL;
-      window.open(url, '_blank');
+      window.open(SUPABASE_URL + '/storage/v1' + data.signedURL, '_blank');
     } catch (e) {
       alert('Error al abrir el PDF: ' + e.message);
     }
   }
 
+  async function borrarPdfDelBucket(rutaArchivo) {
+    if (!rutaArchivo) return;
+    try {
+      await fetch(
+        SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + rutaArchivo,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token
+          }
+        }
+      );
+    } catch (e) {
+      // Si no se pudo borrar el PDF, no detenemos el flujo.
+      console.warn('No se pudo borrar el PDF:', e);
+    }
+  }
+
+  async function borrarUna(p) {
+    var paso1 = confirm(
+      '¿Borrar la postulación de "' + p.nombre + '"?\n\n' +
+      'Esto también borrará su CV en PDF.'
+    );
+    if (!paso1) return;
+
+    var paso2 = confirm(
+      'CONFIRMACIÓN FINAL\n\n' +
+      'Esta acción NO se puede deshacer.\n' +
+      '¿Seguro que quieres borrarla?'
+    );
+    if (!paso2) return;
+
+    try {
+      await borrarPdfDelBucket(p.archivo_pdf);
+      var r = await fetch(
+        SUPABASE_URL + '/rest/v1/postulaciones?id=eq.' + p.id,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token,
+            'Prefer': 'return=minimal'
+          }
+        }
+      );
+      if (!r.ok) throw new Error(await r.text());
+      cargarPostulaciones();
+    } catch (e) {
+      alert('No se pudo borrar: ' + e.message);
+    }
+  }
+
+  async function borrarTodas() {
+    var paso1 = confirm(
+      '¿Borrar TODAS las postulaciones?\n\n' +
+      'Esto borrará también todos los CVs en PDF.'
+    );
+    if (!paso1) return;
+
+    var paso2 = confirm(
+      'CONFIRMACIÓN FINAL\n\n' +
+      'Esta acción NO se puede deshacer.\n' +
+      'Escribe mentalmente "SÍ, borrar todo" y pulsa OK solo si estás segura.'
+    );
+    if (!paso2) return;
+
+    try {
+      // Primero leemos todas para borrar sus PDFs
+      var r = await fetch(
+        SUPABASE_URL + '/rest/v1/postulaciones?select=id,archivo_pdf',
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + token } }
+      );
+      if (!r.ok) throw new Error(await r.text());
+      var filas = await r.json();
+
+      for (var i = 0; i < filas.length; i++) {
+        await borrarPdfDelBucket(filas[i].archivo_pdf);
+      }
+
+      // Ahora borramos todas las filas
+      var del = await fetch(
+        SUPABASE_URL + '/rest/v1/postulaciones?id=not.is.null',
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + token,
+            'Prefer': 'return=minimal'
+          }
+        }
+      );
+      if (!del.ok) throw new Error(await del.text());
+      alert('Todas las postulaciones fueron borradas.');
+      cargarPostulaciones();
+    } catch (e) {
+      alert('No se pudo borrar todo: ' + e.message);
+    }
+  }
+
   document.getElementById('btnLogin').addEventListener('click', entrar);
-  passEl.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') entrar();
-  });
+  passEl.addEventListener('keydown', function(e) { if (e.key === 'Enter') entrar(); });
   document.getElementById('btnSalir').addEventListener('click', function() {
     token = null;
     emailEl.value = '';
@@ -364,6 +443,7 @@
     login.style.display = 'block';
     mostrarLogin('ok', 'Sesión cerrada.');
   });
+  document.getElementById('btnBorrarTodo').addEventListener('click', borrarTodas);
 })();
 </script>
 
