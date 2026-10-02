@@ -1,0 +1,49 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Se ejecuta todos los días a una hora distinta (GitHub varía el minuto)
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Espera aleatoria (0 a 180 minutos)
+        run: |
+          DELAY=$((RANDOM % 181))
+          echo "Esperando $DELAY minutos antes del ping..."
+          sleep $((DELAY * 60))
+
+      - name: Dado del 1 al 100 (inserta solo si sale <= 70)
+        id: dado
+        run: |
+          DADO=$((RANDOM % 100 + 1))
+          echo "Dado: $DADO"
+          if [ "$DADO" -le 70 ]; then
+            echo "insertar=si" >> $GITHUB_OUTPUT
+          else
+            echo "insertar=no" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Insertar fila de keep-alive
+        if: steps.dado.outputs.insertar == 'si'
+        run: |
+          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/postulaciones" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "nombre": "__keepalive__",
+              "cedula": "0",
+              "correo": "keepalive@internal.local",
+              "comentario": "Fila automatica de keep-alive. Puede borrarse manualmente."
+            }' \
+            --fail --silent --show-error
+          echo "✅ Fila keep-alive insertada"
+
+      - name: Skip (no tocó insertar hoy)
+        if: steps.dado.outputs.insertar == 'no'
+        run: echo "⏭️ Hoy no se inserta (dado > 70). Otra vez será."
